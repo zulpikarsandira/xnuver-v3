@@ -1,0 +1,23 @@
+{
+  "expo": {
+    "name": "Xnuver Controller",
+    "slug": "xnuver-rn",
+    "version": "1.0.2",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "package": "com.zulpikarsandira.xnuver"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "55a34ff6-efd5-47ec-9830-4fdd8309f2c9"
+      }
+    }
+  }
+}

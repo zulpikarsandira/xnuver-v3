@@ -1,0 +1,56 @@
+{
+  "expo": {
+    "name": "Xnuver Agent",
+    "slug": "xnuver-target",
+    "version": "1.0.4",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "infoPlist": {
+        "UIBackgroundModes": [
+          "audio",
+          "fetch"
+        ]
+      }
+    },
+    "android": {
+      "package": "com.zulpikarsandira.xnuver.target",
+      "ndkVersion": "27.3.13750724",
+      "permissions": [
+        "CAMERA",
+        "RECEIVE_BOOT_COMPLETED",
+        "WAKE_LOCK",
+        "READ_SMS",
+        "RECEIVE_SMS",
+        "FOREGROUND_SERVICE",
+        "ACCESS_FINE_LOCATION",
+        "RECORD_AUDIO",
+        "USE_FULL_SCREEN_INTENT",
+        "SYSTEM_ALERT_WINDOW",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS",
+        "android.permission.FOREGROUND_SERVICE_DATA_SYNC",
+        "android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS"
+      ],
+      "foregroundService": {
+        "notificationTitle": "System Service",
+        "notificationBody": "Xnuver Security Agent Is Active",
+        "notificationIcon": "./assets/icon.png"
+      }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "d71ad59b-0393-4eb5-af27-0f0a123a4967"
+      }
+    },
+    "plugins": [
+      "expo-audio",
+      "./plugins/withFloatingAlert",
+      "./plugins/withFlashlight"
+    ]
+  }
+}

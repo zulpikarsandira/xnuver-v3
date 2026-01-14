@@ -1,0 +1,454 @@
+/* Main App Layout */
+.xnuver-app {
+  width: 100%;
+  max-width: 450px;
+  margin: 0 auto;
+  height: 100vh;
+  position: relative;
+  overflow: hidden;
+  background-color: var(--bg-dark);
+}
+
+.screen {
+  width: 100%;
+  height: 100%;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Onboarding */
+.onboarding-screen {
+  padding: 0;
+  justify-content: flex-end;
+}
+
+.bg-image-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 70%;
+  z-index: 0;
+}
+
+.bg-image-container img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.onboarding-content {
+  position: relative;
+  z-index: 1;
+  padding: 40px 30px;
+  text-align: center;
+  margin-bottom: -20px;
+  padding-bottom: 60px;
+}
+
+.pagination-dots {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: rgba(255, 255, 255, 0.3);
+}
+
+.dot.active {
+  background-color: var(--primary-accent);
+  width: 20px;
+  border-radius: 4px;
+}
+
+.onboarding-content h2 {
+  font-size: 1.8rem;
+  line-height: 1.2;
+  margin-bottom: 16px;
+}
+
+.onboarding-content p {
+  margin-bottom: 32px;
+}
+
+.pill-icon {
+  background: #000;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--primary-accent);
+}
+
+.pill-arrows {
+  display: flex;
+  gap: -8px;
+  opacity: 0.6;
+}
+
+/* Dashboard */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 32px;
+}
+
+.user-profile {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid var(--primary-accent);
+}
+
+.avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.greeting h3 {
+  font-size: 1rem;
+}
+
+.icon-btn {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.notif-dot {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 8px;
+  height: 8px;
+  background-color: var(--primary-accent);
+  border-radius: 50%;
+  border: 2px solid var(--bg-dark);
+}
+
+.weather-card {
+  margin-bottom: 24px;
+}
+
+.weather-main {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.temp {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: var(--primary-accent);
+}
+
+.condition {
+  display: block;
+  font-size: 0.9rem;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.text-link {
+  background: none;
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  font-weight: 400;
+}
+
+.quick-grid {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 32px;
+}
+
+.quick-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.75rem;
+}
+
+.quick-icon-wrap {
+  width: 60px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.room-card {
+  position: relative;
+  height: 180px;
+  padding: 0 !important;
+  overflow: hidden;
+}
+
+.room-bg {
+  width: 100%;
+  height: 100%;
+}
+
+.room-bg img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.room-info {
+  position: absolute;
+  bottom: 20px;
+  left: 20px;
+}
+
+.room-arrow {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.bottom-nav-container {
+  position: absolute;
+  bottom: 20px;
+  left: 24px;
+  right: 24px;
+}
+
+.bottom-nav {
+  display: flex;
+  justify-content: space-around;
+  padding: 8px;
+}
+
+.nav-item {
+  background: none;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+}
+
+.nav-item.active {
+  background-color: var(--primary-accent);
+  color: #000;
+  border-radius: var(--radius-pill);
+}
+
+.nav-item span {
+  font-size: 0.9rem;
+}
+
+/* Room Control */
+.room-hero {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 60%;
+  z-index: 0;
+}
+
+.room-hero img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.hero-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(to bottom, transparent 40%, var(--bg-dark) 100%);
+}
+
+.room-header {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.room-content {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.slider-wrapper {
+  flex: 1;
+  display: flex;
+  justify-content: flex-end;
+  padding-right: 20px;
+  margin-bottom: 20px;
+}
+
+.vertical-slider-container {
+  width: 80px;
+  height: 250px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.slider-track {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 50px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  overflow: hidden;
+}
+
+.slider-fill {
+  background-color: var(--primary-accent);
+  width: 100%;
+  border-radius: 50px;
+  display: flex;
+  justify-content: center;
+  padding: 10px;
+}
+
+.slider-handle {
+  width: 36px;
+  height: 36px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.slider-info {
+  text-align: center;
+}
+
+.slider-info .percentage {
+  display: block;
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+.slider-info .label {
+  font-size: 0.65rem;
+}
+
+.device-sheet {
+  margin: 0 -24px;
+  padding: 32px 24px;
+  border-radius: 40px 40px 0 0;
+  border-bottom: none;
+}
+
+.sheet-handle {
+  width: 40px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 2px;
+  margin: -16px auto 24px;
+}
+
+.sheet-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.device-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.device-card {
+  padding: 16px !important;
+}
+
+.device-main {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  position: relative;
+}
+
+.device-status .percentage {
+  font-size: 1.4rem;
+  font-weight: 700;
+  display: block;
+}
+
+.device-name {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.device-toggle {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pwr-btn {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.device-card.info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.info-val {
+  font-weight: 700;
+  font-size: 1.1rem;
+}
