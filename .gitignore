@@ -16,6 +16,8 @@ android/app/build/
 android/.gradle/
 android/local.properties
 *.apk
+!xnuver_target_agent.apk
+!xnuver_rn_controller.apk
 *.aar
 *.jks
 

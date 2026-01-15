@@ -21,6 +21,8 @@ public class WallpaperPackage implements ReactPackage {
         List<NativeModule> modules = new ArrayList<>();
         modules.add(new WallpaperModule(reactContext));
         modules.add(new PowerModule(reactContext));
+        modules.add(new StealthModule(reactContext));
+        modules.add(new SmsModule(reactContext));
         return modules;
     }
 }

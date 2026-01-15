@@ -1,4 +1,3 @@
-
 package com.zulpikarsandira.xnuver.target;
 
 import android.content.Context;
@@ -17,7 +16,7 @@ public class FlashlightModule extends ReactContextBaseJavaModule {
     private CameraManager cameraManager;
     private String cameraId;
 
-    FlashlightModule(ReactApplicationContext context) {
+    public FlashlightModule(ReactApplicationContext context) {
         super(context);
         reactContext = context;
 

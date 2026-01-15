@@ -1,0 +1,22 @@
+import React, { useState, useRef, useEffect } from 'react';
+import {
+    StyleSheet,
+    Text,
+    View,
+    Image,
+    ImageBackground,
+    TouchableOpacity,
+    ScrollView,
+    Dimensions,
+    SafeAreaView,
+    StatusBar,
+    Animated,
+    PanResponder,
+    TextInput,
+    Alert,
+    ActivityIndicator,
+    RefreshControl,
+    FlatList
+} from 'react-native';
+// REMOVED NativeModules HERE - IT'S ONLY FOR TARGET APP
+import Svg, { Path, Defs, LinearGradient, Stop } from 'react-native-svg';

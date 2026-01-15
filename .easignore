@@ -1,0 +1,16 @@
+# Ignore everything in the root except the current project we are building
+node_modules/
+node_modules_old/
+xnuver_target/
+xnuver_admin/
+web_prototype/
+.git/
+.expo/
+android/
+ios/
+*.zip
+*.apk
+*.aar
+temp/
+tmp/
+*.log

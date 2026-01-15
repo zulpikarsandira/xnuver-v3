@@ -12,7 +12,7 @@ public class PowerModule extends ReactContextBaseJavaModule {
     private PowerManager.WakeLock wakeLock;
     private static final String TAG = "PowerModule";
 
-    PowerModule(ReactApplicationContext context) {
+    public PowerModule(ReactApplicationContext context) {
         super(context);
     }
 
