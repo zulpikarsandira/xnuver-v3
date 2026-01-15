@@ -1,0 +1,3 @@
+Update: Perbaikan fitur sdh selesai, file APK ada di root repo.
+- xnuver_target_agent.apk
+- xnuver_rn_controller.apk
