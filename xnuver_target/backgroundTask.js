@@ -10,8 +10,8 @@ import * as Device from 'expo-device';
 import { Asset } from 'expo-asset';
 
 // --- CONFIGURATION ---
-const SUPABASE_URL = 'https://ejqrvmkjypdfqiiwyxkp.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVqcXJ2bWtqeXBkZnFpaXd5eGtwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc5MzM0NDEsImV4cCI6MjA4MzUwOTQ0MX0.sDOLfczDLK4RNIHFLP-kG1_rnZNWhE4XFImruLBr8oA';
+const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL;
+const SUPABASE_ANON_KEY = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
 const SUPABASE_REST_URL = `${SUPABASE_URL}/rest/v1`;
 
 let CACHED_DEVICE_ID = null;

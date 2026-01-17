@@ -1,0 +1,37 @@
+.circular-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    width: 220px;
+    height: 220px;
+    border: 1px dashed rgba(0, 255, 204, 0.2);
+    /* Thin decorative ring */
+    font-weight: bold;
+    color: var(--accent-green);
+    /* Using accent color */
+    font-weight: 900;
+    text-align: center;
+    cursor: pointer;
+    transform-origin: 50% 50%;
+    -webkit-transform-origin: 50% 50%;
+    pointer-events: none;
+    /* Let clicks pass through if needed, though user said onHover speedUp */
+}
+
+.circular-text span {
+    position: absolute;
+    display: inline-block;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    font-size: 11px;
+    /* Smaller, sharper tech look */
+    line-height: 1;
+    transition: all 0.5s cubic-bezier(0, 0, 0, 1);
+    text-transform: uppercase;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    letter-spacing: 0.1em;
+}
