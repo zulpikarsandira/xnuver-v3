@@ -3,7 +3,7 @@
     "outputDirectory": "xnuver_admin/dist",
     "rewrites": [
         {
-            "source": "/(.*)",
+            "source": "/((?!assets/|.*\\..*).*)",
             "destination": "/index.html"
         }
     ]
