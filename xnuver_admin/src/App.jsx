@@ -22,7 +22,6 @@ import {
 } from 'lucide-react'
 import Shuffle from './Shuffle'
 import ProfileImg from './assets/gambar.png'
-import ProfileImg from './assets/gambar.png'
 
 function AdminLogin({ onLogin }) {
     const [password, setPassword] = useState('')
