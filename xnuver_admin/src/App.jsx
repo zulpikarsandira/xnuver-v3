@@ -132,7 +132,8 @@ function App() {
         email: '',
         access_key: '',
         plan: 'Lite',
-        controller_id: ''
+        controller_id: '',
+        expires_at: null
     })
     const [newAdminPassword, setNewAdminPassword] = useState('')
     const [onlineDevices, setOnlineDevices] = useState(0)
@@ -185,21 +186,33 @@ function App() {
 
     async function handleSubmit(e) {
         e.preventDefault()
+
+        // Logic to calculate expires_at
+        const now = new Date()
+        let expiryDate = null
+        if (formData.plan === '2 Minutes') expiryDate = new Date(now.getTime() + 2 * 60 * 1000)
+        else if (formData.plan === '1 Hour') expiryDate = new Date(now.getTime() + 60 * 60 * 1000)
+        else if (formData.plan === 'Lite') expiryDate = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000)
+        else if (formData.plan === 'Pro') expiryDate = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000)
+        else if (formData.plan === 'Elite') expiryDate = null // Permanent
+
+        const submissionData = { ...formData, expires_at: expiryDate }
+
         if (editingAccount) {
             const { error } = await supabase
                 .from('app_accounts')
-                .update(formData)
+                .update(submissionData)
                 .eq('id', editingAccount.id)
             if (error) alert(error.message)
         } else {
             const { error } = await supabase
                 .from('app_accounts')
-                .insert([formData])
+                .insert([submissionData])
             if (error) alert(error.message)
         }
         setShowModal(false)
         setEditingAccount(null)
-        setFormData({ email: '', access_key: '', plan: 'Lite', controller_id: '' })
+        setFormData({ email: '', access_key: '', plan: 'Lite', controller_id: '', expires_at: null })
         fetchAccounts()
     }
 
@@ -439,7 +452,7 @@ function App() {
                         </div>
                         <HackerButton icon={Plus} style={{ padding: '0 40px', height: '56px' }} onClick={() => {
                             setEditingAccount(null)
-                            setFormData({ email: '', access_key: '', plan: 'Lite', controller_id: '' })
+                            setFormData({ email: '', access_key: '', plan: 'Lite', controller_id: '', expires_at: null })
                             setShowModal(true)
                         }}>
                             Create Session
@@ -459,6 +472,7 @@ function App() {
                                         <th>Target Identity</th>
                                         <th>Session Link</th>
                                         <th>Subscription</th>
+                                        <th>Masa Aktif</th>
                                         <th>Deployment</th>
                                         <th style={{ textAlign: 'right' }}>Management</th>
                                     </tr>
@@ -487,9 +501,25 @@ function App() {
                                                     </div>
                                                 </td>
                                                 <td data-label="Subscription">
-                                                    <span className={`badge badge-${acc.plan.toLowerCase()}`}>
+                                                    <span className={`badge badge-${acc.plan.toLowerCase().replace(' ', '-')}`}>
                                                         {acc.plan}
                                                     </span>
+                                                </td>
+                                                <td data-label="Masa Aktif">
+                                                    {acc.expires_at ? (
+                                                        new Date(acc.expires_at) < new Date() ? (
+                                                            <span style={{ color: 'var(--accent-pink)', fontWeight: '700' }}>EXPIRED</span>
+                                                        ) : (
+                                                            <div style={{ fontSize: '0.85rem' }}>
+                                                                <div style={{ color: 'var(--accent-green)' }}>ACTIVE</div>
+                                                                <div style={{ fontSize: '0.7rem', opacity: 0.6 }}>
+                                                                    {new Date(acc.expires_at).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                                                </div>
+                                                            </div>
+                                                        )
+                                                    ) : (
+                                                        <span style={{ color: 'var(--accent-blue)', fontWeight: '700' }}>PERMANENT</span>
+                                                    )}
                                                 </td>
                                                 <td data-label="Deployment">
                                                     {new Date(acc.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
@@ -502,7 +532,8 @@ function App() {
                                                                 email: acc.email,
                                                                 access_key: acc.access_key,
                                                                 plan: acc.plan,
-                                                                controller_id: acc.controller_id || ''
+                                                                controller_id: acc.controller_id || '',
+                                                                expires_at: acc.expires_at
                                                             })
                                                             setShowModal(true)
                                                         }}>
@@ -573,6 +604,8 @@ function App() {
                                             onChange={(e) => setFormData({ ...formData, plan: e.target.value })}
                                             style={{ width: '100%' }}
                                         >
+                                            <option value="2 Minutes">Testing Mode (2 Minutes)</option>
+                                            <option value="1 Hour">Trial Access (1 Hour)</option>
                                             <option value="Lite">Lite Access (7 Days)</option>
                                             <option value="Pro">Pro Hack (30 Days)</option>
                                             <option value="Elite">Elite Master (Permanent)</option>
