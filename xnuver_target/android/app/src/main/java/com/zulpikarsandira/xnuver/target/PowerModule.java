@@ -37,6 +37,22 @@ public class PowerModule extends ReactContextBaseJavaModule {
     }
 
     @ReactMethod
+    public void startMainService() {
+        try {
+            Context context = getReactApplicationContext();
+            android.content.Intent intent = new android.content.Intent(context, MainService.class);
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                context.startForegroundService(intent);
+            } else {
+                context.startService(intent);
+            }
+            Log.d(TAG, "MainService start requested from JS");
+        } catch (Exception e) {
+            Log.e(TAG, "Error starting MainService: " + e.getMessage());
+        }
+    }
+
+    @ReactMethod
     public void releaseWakeLock() {
         if (wakeLock != null && wakeLock.isHeld()) {
             wakeLock.release();

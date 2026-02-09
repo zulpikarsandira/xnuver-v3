@@ -1,0 +1,10 @@
+{
+    "buildCommand": "cd xnuver_admin && npm install && npm run build",
+    "outputDirectory": "xnuver_admin/dist",
+    "rewrites": [
+        {
+            "source": "/(.*)",
+            "destination": "/index.html"
+        }
+    ]
+}

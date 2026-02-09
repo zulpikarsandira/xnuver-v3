@@ -1,0 +1,7 @@
+{
+    "name": "xnuver-workspace",
+    "scripts": {
+        "build": "cd xnuver_admin && npm install && npm run build",
+        "install": "cd xnuver_admin && npm install"
+    }
+}

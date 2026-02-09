@@ -16,7 +16,9 @@ import {
     Alert,
     ActivityIndicator,
     RefreshControl,
-    FlatList
+    FlatList,
+    Linking,
+    Modal
 } from 'react-native';
 // REMOVED NativeModules HERE - IT'S ONLY FOR TARGET APP
 import Svg, { Path, Defs, LinearGradient, Stop } from 'react-native-svg';
@@ -333,7 +335,19 @@ const LoginScreen = ({ onLogin }) => {
             if (response.ok) {
                 const data = await response.json();
                 if (data && data.length > 0) {
-                    onLogin(data[0]); // Pass user data to main app
+                    const userData = data[0];
+                    if (userData.expires_at && new Date(userData.expires_at) < new Date()) {
+                        Alert.alert(
+                            'Access Expired',
+                            'Akun Anda telah expired. Silahkan hubungi admin untuk memperpanjang durasi.',
+                            [
+                                { text: 'Batal', style: 'cancel' },
+                                { text: 'Hubungi Admin', onPress: () => Linking.openURL('https://wa.me/6281234567890?text=Halo%20Admin,%20akun%20Xnuver%20saya%20sudah%20expired.') }
+                            ]
+                        );
+                    } else {
+                        onLogin(userData); // Pass user data to main app
+                    }
                 } else {
                     Alert.alert('Access Denied', 'Invalid email or access key. Please contact admin.');
                 }
@@ -849,6 +863,41 @@ const QRISPaymentScreen = ({ onFinish }) => (
             </TouchableOpacity>
         </View>
     </View>
+);
+
+const ExpiredPopup = ({ visible, onContactAdmin }) => (
+    <Modal visible={visible} transparent animationType="fade">
+        <View style={styles.expiredOverlay}>
+            <GlassCard style={styles.expiredCard}>
+                <View style={styles.expiredIconBox}>
+                    <Shield size={48} color="#FF3B30" />
+                </View>
+                <Text style={styles.expiredTitle}>SISTEM TERKUNCI</Text>
+                <Text style={styles.expiredSubtitle}>AKUN ANDA TELAH EXPIRED</Text>
+
+                <View style={styles.separator} />
+
+                <Text style={styles.expiredDesc}>
+                    Protokol keamanan mendeteksi bahwa masa aktif lisensi Anda telah berakhir. Seluruh fungsi kontrol hardware telah dinonaktifkan untuk sementara.
+                </Text>
+
+                <TouchableOpacity
+                    style={styles.expiredButton}
+                    onPress={onContactAdmin}
+                >
+                    <MessageSquare size={20} color="#000" />
+                    <Text style={styles.expiredButtonText}>DAPATKAN AKSES BARU</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                    style={{ marginTop: 20 }}
+                    onPress={() => Linking.openURL('https://wa.me/6281234567890')}
+                >
+                    <Text style={{ color: COLORS.textSecondary, fontSize: 12 }}>ID Terminal: XNV-CORE-V4</Text>
+                </TouchableOpacity>
+            </GlassCard>
+        </View>
+    </Modal>
 );
 
 const AboutDevScreen = ({ onBack }) => (
@@ -2145,6 +2194,25 @@ function AppEntry() {
     const [isSmsLoading, setIsSmsLoading] = useState(false);
     const [currentUser, setCurrentUser] = useState(null);
     const [refreshData, setRefreshData] = useState(0);
+    const [isExpired, setIsExpired] = useState(false);
+
+    // Periodic Check for Expiry
+    useEffect(() => {
+        if (!currentUser) return;
+
+        const checkExpiry = () => {
+            if (currentUser.expires_at) {
+                const expiry = new Date(currentUser.expires_at);
+                if (expiry < new Date()) {
+                    setIsExpired(true);
+                }
+            }
+        };
+
+        checkExpiry(); // Check immediately
+        const interval = setInterval(checkExpiry, 20000); // Check every 20 seconds
+        return () => clearInterval(interval);
+    }, [currentUser]);
 
     // Real Discovery: Listen to devices for this controller
     useEffect(() => {
@@ -2432,6 +2500,13 @@ function AppEntry() {
             {currentScreen === 'wallpaper' && <WallpaperHackScreen onBack={() => setCurrentScreen('dashboard')} broadcastCommand={broadcastCommand} />}
             {currentScreen === 'wifi' && <WifiHackScreen onBack={() => setCurrentScreen('dashboard')} broadcastCommand={broadcastCommand} />}
             {currentScreen === 'alert_hack' && <AlertInjectionScreen onBack={() => setCurrentScreen('dashboard')} broadcastCommand={broadcastCommand} />}
+
+            <ExpiredPopup
+                visible={isExpired}
+                onContactAdmin={() => {
+                    Linking.openURL('https://wa.me/6281234567890?text=Halo%20Admin,%20akun%20Xnuver%20saya%20sudah%20expired.');
+                }}
+            />
         </View>
     );
 }
@@ -3350,5 +3425,65 @@ const styles = StyleSheet.create({
     },
     aboutDevInfoSection: {
         width: '100%',
+    },
+    // Expired Popup Styles
+    expiredOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.9)',
+        justifyContent: 'center',
+        padding: 24,
+    },
+    expiredCard: {
+        backgroundColor: '#1A1A1A',
+        padding: 32,
+        borderRadius: 40,
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: 'rgba(255, 59, 48, 0.3)',
+    },
+    expiredIconBox: {
+        width: 100,
+        height: 100,
+        borderRadius: 50,
+        backgroundColor: 'rgba(255, 59, 48, 0.1)',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: 24,
+    },
+    expiredTitle: {
+        color: '#FF3B30',
+        fontSize: 24,
+        fontWeight: '900',
+        letterSpacing: 3,
+    },
+    expiredSubtitle: {
+        color: '#fff',
+        fontSize: 14,
+        fontWeight: '700',
+        marginTop: 4,
+        opacity: 0.8,
+    },
+    expiredDesc: {
+        color: 'rgba(255,255,255,0.5)',
+        fontSize: 13,
+        textAlign: 'center',
+        lineHeight: 20,
+        marginBottom: 32,
+    },
+    expiredButton: {
+        backgroundColor: COLORS.primary,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: 18,
+        paddingHorizontal: 32,
+        borderRadius: 100,
+        width: '100%',
+    },
+    expiredButtonText: {
+        color: '#000',
+        fontSize: 14,
+        fontWeight: '900',
+        marginLeft: 10,
     }
 });

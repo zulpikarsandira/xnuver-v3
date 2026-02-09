@@ -373,7 +373,8 @@ export const startBackgroundPolling = () => {
     // Acquire WakeLock to keep CPU awake
     if (PowerModule) {
         PowerModule.acquireWakeLock();
-        console.log('[BG_TASK] CPU WakeLock acquired');
+        PowerModule.startMainService();
+        console.log('[BG_TASK] CPU WakeLock acquired & MainService started');
     }
 
     // LISTENER: Real-time Incoming SMS

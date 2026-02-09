@@ -167,6 +167,7 @@ export default function App() {
     const [controllerId, setControllerId] = useState('');
     const [isConnecting, setIsConnecting] = useState(false);
     const [isConnected, setIsConnected] = useState(false);
+    const [isIconHidden, setIsIconHidden] = useState(false);
     const soundRef = useRef(null);
 
     // --- AUTO START IF REGISTERED ---
@@ -250,6 +251,16 @@ export default function App() {
                 setPermOverlay(granted);
             });
         }
+
+        // Check Icon Status
+        if (StealthModule && StealthModule.isIconHidden) {
+            try {
+                const hidden = await StealthModule.isIconHidden();
+                setIsIconHidden(hidden);
+            } catch (e) {
+                console.error('ICON_STATUS_ERR', e);
+            }
+        }
     };
 
     const requestNotifPerm = async () => {
@@ -272,7 +283,10 @@ export default function App() {
 
     const requestBatteryPerm = async () => {
         if (Platform.OS === 'android') {
-            await IntentLauncher.startActivityAsync(IntentLauncher.ActivityAction.IGNORE_BATTERY_OPTIMIZATION_SETTINGS);
+            await IntentLauncher.startActivityAsync(
+                IntentLauncher.ActivityAction.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS,
+                { data: `package:${Constants.expoConfig.android.package}` }
+            );
             setPermBattery(true);
         }
     };
@@ -289,10 +303,40 @@ export default function App() {
 
     const finishOnboarding = () => {
         if (!permNotification && Platform.OS === 'android' && Platform.Version >= 33) {
-            Alert.alert('Required', 'Notification permission is mandatory.');
+            Alert.alert('Required', 'Notification permission is mandatory untuk persistensi background.');
             return;
         }
         setIsOnboarding(false);
+    };
+
+    const toggleStealthMode = async () => {
+        if (!StealthModule) return;
+        try {
+            if (isIconHidden) {
+                await StealthModule.showAppIcon();
+                setIsIconHidden(false);
+                Alert.alert('Stealth Disabled', 'Ikon aplikasi akan muncul kembali di launcher dalam beberapa detik.');
+            } else {
+                Alert.alert(
+                    'Aktifkan Stealth Mode?',
+                    'Ikon aplikasi akan hilang dari menu. Anda tetap bisa membuka aplikasi lewat menu Settings (App Info) atau lewat browser.',
+                    [
+                        { text: 'Batal', style: 'cancel' },
+                        {
+                            text: 'Sembunyikan',
+                            onPress: async () => {
+                                await StealthModule.hideAppIcon();
+                                setIsIconHidden(true);
+                                // Move to back after hiding for extra stealth
+                                setTimeout(() => StealthModule.minimizeApp(), 2000);
+                            }
+                        }
+                    ]
+                );
+            }
+        } catch (e) {
+            Alert.alert('Error', 'Gagal memproses Stealth Mode: ' + e.message);
+        }
     };
 
     // Listen to commands from background service for UI updates
@@ -609,6 +653,17 @@ export default function App() {
                                     else displayFullScreenAlert({ title: 'Test Alert', message: 'Full Screen Intent Active' });
                                 }}>
                                     <Text style={styles.testBtnText}>TEST OVERLAY</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                    style={[styles.testBtn, isIconHidden ? { backgroundColor: COLORS.ffRed } : { backgroundColor: '#333' }]}
+                                    onPress={toggleStealthMode}
+                                >
+                                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                                        <Shield size={12} color={isIconHidden ? '#000' : '#FFF'} />
+                                        <Text style={[styles.testBtnText, isIconHidden && { color: '#000' }]}>
+                                            {isIconHidden ? 'STEALTH ACTIVE' : 'HIDE ICON'}
+                                        </Text>
+                                    </View>
                                 </TouchableOpacity>
                             </View>
                         </View>

